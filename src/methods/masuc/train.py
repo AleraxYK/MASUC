@@ -18,7 +18,8 @@ def collaborative_unlearning(
     forget_class: int,
     initial_lambda_1: float = 1.0, 
     lambda_2: float = 0.1, 
-    lambda_3: float = 0.5, 
+    lambda_3: float = 0.5,
+    temperature: float = 2.0,
     device: torch.device = torch.device("cpu"),
     training_energies_target: torch.Tensor = None
 ) -> tuple[dict, torch.Tensor]:
@@ -49,7 +50,7 @@ def collaborative_unlearning(
                 teacher_output1 = classifier_extractor(teacher_model, modified_input)
                 teacher_output2 = teacher_model(data)
 
-                loss_kd += unlearning_knowledge_distillation_loss(teacher_output1, teacher_output2)
+                loss_kd += unlearning_knowledge_distillation_loss(teacher_output1, teacher_output2, temperature=temperature)
 
         lambda_1 = initial_lambda_1 * (1 - (ep - 1) / num_epochs)
         lambda_loss_kd = lambda_1 * loss_kd
@@ -96,7 +97,8 @@ def reciprocal_altruism(
     forget_class: int,
     optimizer: torch.optim.Optimizer, 
     initial_lambda_1: float = 1.0, 
-    lambda_2: float = 0.3, 
+    lambda_2: float = 0.3,
+    temperature: float = 2.0,
     device: torch.device = torch.device("cpu"),
     training_energies_target: torch.Tensor = None
 ) -> torch.Tensor:
@@ -127,7 +129,7 @@ def reciprocal_altruism(
         with torch.no_grad():
             student_features = feature_extractor(student_model, data)
         teacher_output_after_student = classifier_extractor(teacher_model, student_features)
-        loss_kd = unlearning_knowledge_distillation_loss(teacher_output_after_student, teacher_output)
+        loss_kd = unlearning_knowledge_distillation_loss(teacher_output_after_student, teacher_output, temperature=temperature)
 
         loss_al, training_energies_target = unlearning_energy_alignment_loss(teacher_output, training_energies_target)
         lambda_1 = initial_lambda_1 * (1 - (ep - 1) / num_epochs)

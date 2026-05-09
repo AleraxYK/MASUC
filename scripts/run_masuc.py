@@ -25,21 +25,34 @@ def run_masuc():
     os.makedirs("results/plots", exist_ok=True)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="cifar10", choices=["cifar10", "mnist", "tinyimagenet"])
-    parser.add_argument("--forget_class", type=int, default=3)
+    parser.add_argument("--dataset",     type=str,   default="cifar10", choices=["cifar10", "mnist", "tinyimagenet"])
+    parser.add_argument("--forget_class",type=int,   default=3)
+    # Component ablation flags
     parser.add_argument("--no_ea",      action="store_true", help="Ablation: disable Energy Alignment")
     parser.add_argument("--no_kd",      action="store_true", help="Ablation: disable Knowledge Distillation")
     parser.add_argument("--no_ra",      action="store_true", help="Ablation: disable Reciprocal Altruism (teacher phase)")
     parser.add_argument("--no_erasure", action="store_true", help="Ablation: disable Erasure Loss")
+    # Hyperparameter sweep flags
+    parser.add_argument("--lambda_1",   type=float, default=None,  help="KD loss weight (default: 1.0)")
+    parser.add_argument("--lambda_2",   type=float, default=None,  help="Energy Alignment weight (default: 0.1)")
+    parser.add_argument("--lambda_3",   type=float, default=None,  help="Erasure loss weight (default: 0.5)")
+    parser.add_argument("--lr_student", type=float, default=None,  help="Student learning rate (default: 0.001)")
+    parser.add_argument("--lr_teacher", type=float, default=None,  help="Teacher learning rate (default: 0.0001)")
+    parser.add_argument("--epochs",     type=int,   default=None,  help="Number of unlearning epochs (default: 5)")
+    parser.add_argument("--temperature",type=float, default=None,  help="KD temperature tau (default: 2.0)")
+    parser.add_argument("--run_id",     type=str,   default=None,  help="Override output run ID")
     args = parser.parse_args()
     ds = args.dataset
 
     # Build a unique prefix for this run (used in all output filenames)
-    run_id = f"{ds}_masuc"
-    if args.no_kd:      run_id += "_no_kd"
-    if args.no_ea:      run_id += "_no_ea"
-    if args.no_ra:      run_id += "_no_ra"
-    if args.no_erasure: run_id += "_no_erasure"
+    if args.run_id:
+        run_id = args.run_id
+    else:
+        run_id = f"{ds}_masuc"
+        if args.no_kd:      run_id += "_no_kd"
+        if args.no_ea:      run_id += "_no_ea"
+        if args.no_ra:      run_id += "_no_ra"
+        if args.no_erasure: run_id += "_no_erasure"
     print(f"Run ID: {run_id}")
 
     device = get_device()
@@ -47,17 +60,18 @@ def run_masuc():
 
     hyperparams = {
         "backbone":     "resnet18",
-        "epochs":       5,              
-        "batch_size":   128,            
-        "lr_student":   0.001,          
-        "lr_teacher":   0.0001,         
+        "epochs":       args.epochs      if args.epochs      is not None else 5,
+        "batch_size":   128,
+        "lr_student":   args.lr_student  if args.lr_student  is not None else 0.001,
+        "lr_teacher":   args.lr_teacher  if args.lr_teacher  is not None else 0.0001,
         "momentum":     0.9,
         "weight_decay": 5e-4,
         "num_workers":  4,
-        "lambda_1":     0.0 if args.no_kd      else 1.0,
-        "lambda_2":     0.0 if args.no_ea      else 0.1,
-        "lambda_3":     0.0 if args.no_erasure else 0.5,
-        "forget_class": args.forget_class               
+        "lambda_1":     (args.lambda_1   if args.lambda_1    is not None else (0.0 if args.no_kd      else 1.0)),
+        "lambda_2":     (args.lambda_2   if args.lambda_2    is not None else (0.0 if args.no_ea      else 0.1)),
+        "lambda_3":     (args.lambda_3   if args.lambda_3    is not None else (0.0 if args.no_erasure else 0.5)),
+        "temperature":  args.temperature if args.temperature is not None else 2.0,
+        "forget_class": args.forget_class
     }
 
     train_ds = get_dataset(ds, "./data", train=True)
@@ -119,6 +133,7 @@ def run_masuc():
                     optimizer=teacher_optimizers[tid],
                     initial_lambda_1=hyperparams["lambda_1"],
                     lambda_2=hyperparams["lambda_2"],
+                    temperature=hyperparams["temperature"],
                     device=device
                 )
 
@@ -135,6 +150,7 @@ def run_masuc():
             initial_lambda_1=hyperparams["lambda_1"],
             lambda_2=hyperparams["lambda_2"],
             lambda_3=hyperparams["lambda_3"],
+            temperature=hyperparams["temperature"],
             device=device
         )
 
