@@ -173,6 +173,7 @@ def train_multiple_agent(smoke_test: bool = False) -> dict[int, dict]:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="cifar10", choices=["cifar10", "mnist", "tinyimagenet"])
+    parser.add_argument("--epochs",  type=int, default=None, help="Override default epochs (default: 5)")
     args = parser.parse_args()
     ds = args.dataset
 
@@ -215,7 +216,7 @@ def train_multiple_agent(smoke_test: bool = False) -> dict[int, dict]:
     
     hyperparams = {
     "backbone": backbone,
-    "epochs": 2 if smoke_test else 5,
+    "epochs": args.epochs if args.epochs is not None else (2 if smoke_test else 5),
     "batch_size": batch_size,
     "lr": lr,
     "momentum": momentum,

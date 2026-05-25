@@ -26,6 +26,7 @@ def baseline_retrain():
     parser.add_argument("--dataset",      type=str, default="cifar10", choices=["cifar10", "mnist", "tinyimagenet"])
     parser.add_argument("--forget_class", type=int, default=3)
     parser.add_argument("--seed",         type=int, default=None, help="Random seed for reproducibility")
+    parser.add_argument("--epochs",       type=int, default=None, help="Override default retrain epochs")
     args = parser.parse_args()
     ds = args.dataset
     fc = args.forget_class
@@ -45,7 +46,7 @@ def baseline_retrain():
 
     hyperparams = {
         "backbone":     "resnet18",
-        "epochs":       40 if ds == "tinyimagenet" else 20,
+        "epochs":       args.epochs if args.epochs is not None else (40 if ds == "tinyimagenet" else 20),
         "batch_size":   128,
         "lr":           0.1,
         "momentum":     0.9,

@@ -38,11 +38,12 @@ def train_model():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="cifar10", choices=["cifar10", "mnist", "tinyimagenet"])
     parser.add_argument("--forget_class", type=int, default=3)
+    parser.add_argument("--epochs", type=int, default=None, help="Override default epochs")
     args = parser.parse_args()
     ds = args.dataset
 
     backbone    = "resnet18"
-    epoch       = 50 if ds == "tinyimagenet" else 30
+    epoch       = args.epochs if args.epochs is not None else (50 if ds == "tinyimagenet" else 30)
     batch_size  = 64
     lr          = 0.1
     momentum    = 0.9

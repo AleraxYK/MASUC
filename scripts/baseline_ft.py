@@ -25,6 +25,7 @@ def baseline_ft():
     parser.add_argument("--dataset",      type=str, default="cifar10", choices=["cifar10", "mnist", "tinyimagenet"])
     parser.add_argument("--forget_class", type=int, default=3)
     parser.add_argument("--seed",         type=int, default=None, help="Random seed for reproducibility")
+    parser.add_argument("--epochs",       type=int, default=5,    help="Number of FT epochs (default: 5)")
     args = parser.parse_args()
     ds = args.dataset
     fc = args.forget_class
@@ -44,7 +45,7 @@ def baseline_ft():
 
     hyperparams = {
         "backbone":     "resnet18",
-        "epochs":       5,
+        "epochs":       args.epochs,
         "batch_size":   128,
         "lr":           0.01,
         "momentum":     0.9,
