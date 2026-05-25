@@ -42,10 +42,12 @@ def collaborative_unlearning(
 
         student_output = student_model(data)
 
+        # Compute student features once — shared across all teachers
+        modified_input = feature_extractor(student_model, data)
+
         loss_kd = 0
-        for tid, teacher_model in teacher_models.items():
+        for teacher_model in teacher_models.values():
             teacher_model.eval()
-            modified_input = feature_extractor(student_model, data)
             teacher_output1 = classifier_extractor(teacher_model, modified_input)
             with torch.no_grad():
                 teacher_output2 = teacher_model(data)

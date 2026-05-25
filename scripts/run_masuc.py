@@ -1,5 +1,6 @@
 import os
 import time
+import contextlib
 import argparse
 import json as js
 import matplotlib.pyplot as plt
@@ -7,6 +8,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from concurrent.futures import ThreadPoolExecutor
 from torch.utils.data import DataLoader, Subset
 
 from src.data import get_dataset, get_num_classes
@@ -120,6 +122,25 @@ def run_masuc():
         weight_decay=hyperparams["weight_decay"],
     )
 
+    # Per-teacher DataLoaders for parallel RA — num_workers=0 is required for
+    # thread-safe iteration (multiple threads can't share a multi-worker loader).
+    teacher_ra_loaders = {
+        tid: DataLoader(
+            forget_train_ds,
+            batch_size=hyperparams["batch_size"],
+            shuffle=True,
+            num_workers=0,
+            pin_memory=(device.type == "cuda"),
+        )
+        for tid in teachers
+    }
+
+    # One CUDA stream per teacher so the GPU can overlap their kernels.
+    teacher_streams = (
+        {tid: torch.cuda.Stream() for tid in teachers}
+        if device.type == "cuda" else {}
+    )
+
     history = {"epoch": [], "train_loss": [], "retain_acc": [], "forget_acc": []}
 
     print(f"\n{'='*60}\n\t=== MASUC Unlearning ===\n{'='*60}\n")
@@ -129,21 +150,32 @@ def run_masuc():
         print(f"\n--- Epoch {ep}/{hyperparams['epochs']} ---")
 
         if not args.no_ra:
-            for tid, teacher in teachers.items():
-                reciprocal_altruism(
-                    ep=ep,
-                    num_epochs=hyperparams["epochs"],
-                    teacher_id=tid,
-                    teacher_model=teacher,
-                    student_model=student,
-                    forget_train_loader=forget_train_loader,
-                    forget_class=hyperparams["forget_class"],
-                    optimizer=teacher_optimizers[tid],
-                    initial_lambda_1=hyperparams["lambda_1"],
-                    lambda_2=hyperparams["lambda_2"],
-                    temperature=hyperparams["temperature"],
-                    device=device
-                )
+            def _run_ra(tid: int) -> None:
+                stream = teacher_streams.get(tid)
+                ctx = torch.cuda.stream(stream) if stream is not None else contextlib.nullcontext()
+                with ctx:
+                    reciprocal_altruism(
+                        ep=ep,
+                        num_epochs=hyperparams["epochs"],
+                        teacher_id=tid,
+                        teacher_model=teachers[tid],
+                        student_model=student,
+                        forget_train_loader=teacher_ra_loaders[tid],
+                        forget_class=hyperparams["forget_class"],
+                        optimizer=teacher_optimizers[tid],
+                        initial_lambda_1=hyperparams["lambda_1"],
+                        lambda_2=hyperparams["lambda_2"],
+                        temperature=hyperparams["temperature"],
+                        device=device,
+                    )
+
+            with ThreadPoolExecutor(max_workers=len(teachers)) as pool:
+                futures = [pool.submit(_run_ra, tid) for tid in teachers]
+                for f in futures:
+                    f.result()
+
+            if device.type == "cuda":
+                torch.cuda.synchronize()
 
         metrics, _ = collaborative_unlearning(
             ep=ep,
