@@ -1,0 +1,42 @@
+[
+  {
+    "label": "Full MASUC",
+    "retain_mean": 0.8500740740740741,
+    "retain_std": 0.008119731593609684,
+    "forget_mean": 0.11866666666666666,
+    "forget_std": 0.03742102795666273,
+    "n_seeds": 3
+  },
+  {
+    "label": "w/o Energy Alignment",
+    "retain_mean": 0.8259629629629629,
+    "retain_std": 0.009989088697379517,
+    "forget_mean": 0.08600000000000001,
+    "forget_std": 0.020223748416156685,
+    "n_seeds": 3
+  },
+  {
+    "label": "w/o Knowledge Distillation",
+    "retain_mean": 0.836037037037037,
+    "retain_std": 0.008472419548400285,
+    "forget_mean": 0.09566666666666668,
+    "forget_std": 0.023028967265887833,
+    "n_seeds": 3
+  },
+  {
+    "label": "w/o Reciprocal Altruism",
+    "retain_mean": 0.8411481481481481,
+    "retain_std": 0.006281791571661251,
+    "forget_mean": 0.08600000000000001,
+    "forget_std": 0.020074859899884733,
+    "n_seeds": 3
+  },
+  {
+    "label": "w/o Erasure Loss",
+    "retain_mean": 0.8368148148148148,
+    "retain_std": 0.007643550766022111,
+    "forget_mean": 0.136,
+    "forget_std": 0.03278719262151001,
+    "n_seeds": 3
+  }
+]

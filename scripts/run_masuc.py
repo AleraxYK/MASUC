@@ -15,6 +15,7 @@ from src.utils.device import get_device
 from src.eval.metrics import evaluate
 
 from src.methods.masuc.train import collaborative_unlearning, reciprocal_altruism
+from src.utils.seed import set_seed
 
 def run_masuc():
     """
@@ -41,8 +42,13 @@ def run_masuc():
     parser.add_argument("--epochs",     type=int,   default=None,  help="Number of unlearning epochs (default: 5)")
     parser.add_argument("--temperature",type=float, default=None,  help="KD temperature tau (default: 2.0)")
     parser.add_argument("--run_id",     type=str,   default=None,  help="Override output run ID")
+    parser.add_argument("--seed",       type=int,   default=None,  help="Random seed for reproducibility")
     args = parser.parse_args()
     ds = args.dataset
+
+    if args.seed is not None:
+        set_seed(args.seed)
+        print(f"Seed: {args.seed}")
 
     # Build a unique prefix for this run (used in all output filenames)
     if args.run_id:
@@ -53,6 +59,7 @@ def run_masuc():
         if args.no_ea:      run_id += "_no_ea"
         if args.no_ra:      run_id += "_no_ra"
         if args.no_erasure: run_id += "_no_erasure"
+        if args.seed is not None: run_id += f"_seed{args.seed}"
     print(f"Run ID: {run_id}")
 
     device = get_device()
@@ -71,7 +78,8 @@ def run_masuc():
         "lambda_2":     (args.lambda_2   if args.lambda_2    is not None else (0.0 if args.no_ea      else 0.1)),
         "lambda_3":     (args.lambda_3   if args.lambda_3    is not None else (0.0 if args.no_erasure else 0.5)),
         "temperature":  args.temperature if args.temperature is not None else 2.0,
-        "forget_class": args.forget_class
+        "forget_class": args.forget_class,
+        "seed":         args.seed,
     }
 
     train_ds = get_dataset(ds, "./data", train=True)
@@ -159,7 +167,11 @@ def run_masuc():
         history["retain_acc"].append(metrics["retain_acc"])
         history["forget_acc"].append(metrics["forget_acc"])
 
-    print(f"\nMASUC Finished! Total elapsed: {time.time()-t0_total:.1f}s")
+    total_elapsed = time.time() - t0_total
+    print(f"\nMASUC Finished! Total elapsed: {total_elapsed:.1f}s")
+
+    history["elapsed_sec"] = total_elapsed
+    history["hyperparams"] = hyperparams
 
     torch.save(student.state_dict(), f"results/checkpoints/{run_id}_final.pth")
     print(f"\nSaved: results/checkpoints/{run_id}_final.pth")

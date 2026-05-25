@@ -45,12 +45,12 @@ def collaborative_unlearning(
         loss_kd = 0
         for tid, teacher_model in teacher_models.items():
             teacher_model.eval()
+            modified_input = feature_extractor(student_model, data)
+            teacher_output1 = classifier_extractor(teacher_model, modified_input)
             with torch.no_grad():
-                modified_input = feature_extractor(student_model, data)
-                teacher_output1 = classifier_extractor(teacher_model, modified_input)
                 teacher_output2 = teacher_model(data)
 
-                loss_kd += unlearning_knowledge_distillation_loss(teacher_output1, teacher_output2, temperature=temperature)
+            loss_kd += unlearning_knowledge_distillation_loss(teacher_output1, teacher_output2, temperature=temperature)
 
         lambda_1 = initial_lambda_1 * (1 - (ep - 1) / num_epochs)
         lambda_loss_kd = lambda_1 * loss_kd

@@ -42,7 +42,7 @@ def train_model():
     ds = args.dataset
 
     backbone    = "resnet18"
-    epoch       = 30
+    epoch       = 50 if ds == "tinyimagenet" else 30
     batch_size  = 64
     lr          = 0.1
     momentum    = 0.9

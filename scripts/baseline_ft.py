@@ -13,6 +13,7 @@ from src.data import get_dataset, get_num_classes
 from src.models import create_model
 from src.eval.metrics import evaluate
 from src.utils.device import get_device
+from src.utils.seed import set_seed
 
 
 def baseline_ft():
@@ -23,9 +24,16 @@ def baseline_ft():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset",      type=str, default="cifar10", choices=["cifar10", "mnist", "tinyimagenet"])
     parser.add_argument("--forget_class", type=int, default=3)
+    parser.add_argument("--seed",         type=int, default=None, help="Random seed for reproducibility")
     args = parser.parse_args()
     ds = args.dataset
     fc = args.forget_class
+
+    if args.seed is not None:
+        set_seed(args.seed)
+        print(f"Seed: {args.seed}")
+
+    seed_suffix = f"_seed{args.seed}" if args.seed is not None else ""
 
     os.makedirs("results/checkpoints", exist_ok=True)
     os.makedirs("results/reports",     exist_ok=True)
@@ -92,8 +100,10 @@ def baseline_ft():
         history["forget_acc"].append(metrics["forget_acc"])
         print(f"[FT] epoch {ep:02d}/{hyperparams['epochs']} | loss {running_loss/n:.4f} | retain_acc {metrics['retain_acc']:.4f} | forget_acc {metrics['forget_acc']:.4f} | elapsed {time.time()-t0:.1f}s")
 
-    torch.save(model.state_dict(), f"results/checkpoints/{ds}_baseline_ft.pth")
-    with open(f"results/reports/{ds}_baseline_ft_curve.json", "w") as f:
+    history["elapsed_sec"] = time.time() - t0
+    history["hyperparams"] = hyperparams
+    torch.save(model.state_dict(), f"results/checkpoints/{ds}_baseline_ft{seed_suffix}.pth")
+    with open(f"results/reports/{ds}_baseline_ft{seed_suffix}_curve.json", "w") as f:
         js.dump(history, f, indent=2)
 
     plt.figure(figsize=(7, 4))
@@ -102,9 +112,9 @@ def baseline_ft():
     plt.xlabel("Epoch"); plt.ylabel("Accuracy")
     plt.title(f"Baseline FT ({ds.upper()}) — Retain vs Forget Accuracy")
     plt.legend(); plt.grid(True, alpha=0.3); plt.tight_layout()
-    plt.savefig(f"results/plots/{ds}_baseline_ft_acc.png", dpi=400, bbox_inches="tight")
+    plt.savefig(f"results/plots/{ds}_baseline_ft{seed_suffix}_acc.png", dpi=400, bbox_inches="tight")
     plt.close()
-    print(f"Saved: results/plots/{ds}_baseline_ft_acc.png")
+    print(f"Saved: results/plots/{ds}_baseline_ft{seed_suffix}_acc.png")
 
 
 if __name__ == "__main__":
