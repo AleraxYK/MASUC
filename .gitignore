@@ -4,4 +4,5 @@ __pycache__/
 .vscode/
 *.pth
 .ipynb_checkpoints/
-paper/
+paper/paper_tables/
+paper_tables/

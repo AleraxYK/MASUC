@@ -110,6 +110,10 @@ def baseline_neggradplus():
             optimizer.zero_grad(set_to_none=True)
             loss_r = criterion(model(x_r), y_r)
             loss_f = criterion(model(x_f), y_f)
+            # Joint objective: descent on retain CE, ascent on forget CE.
+            # The composite value is allowed to be negative once the forget
+            # loss grows large enough — that is the intended gradient-ascent
+            # direction (see Kurmanji et al. 2023), not a bug.
             loss   = loss_r - hyperparams["beta"] * loss_f
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=hyperparams["grad_clip"])

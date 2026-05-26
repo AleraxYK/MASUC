@@ -1,25 +1,28 @@
 #!/usr/bin/env bash
 #
-# Full reproduction pipeline for MASUC.
-# Designed for single-GPU Linux/CUDA box (e.g. RTX 3070).
+# Full MASUC reproduction pipeline.
+# Designed for single-GPU CUDA (RTX 2080/3070 or T4/P100/V100/A100 on Kaggle/Colab).
 #
-# Stages (skippable via flags):
-#   0. Env check
-#   1. Pre-train student (per dataset)
-#   2. Train teacher society (per dataset)
-#   3. Generate forget/retain splits (per dataset, per forget class)
-#   4. MASUC + ablations × seeds
-#   5. Baselines × seeds
-#   6. HP ablation (CIFAR-10 only, optional)
-#   7. Aggregation: compare_ablation, compare_methods, eval_mia, compute_total_cost
+# Auto-enables AMP (mixed precision) and the parallel MASUC variant when CUDA
+# is detected.  Falls back gracefully on MPS/CPU.
+#
+# Stages (skippable via --skip):
+#   pretrain   — student pretrain per dataset
+#   teachers   — train K=5 teachers per dataset
+#   splits     — forget/retain split per (dataset, forget_class)
+#   ablation   — MASUC + 4 ablations × seeds
+#   baselines  — FT, NegGrad+, RandLabels, Bad-Teaching, SCRUB, Retrain × seeds
+#   hp         — HP OFAT sweep (CIFAR-10 only by default)
+#   aggregate  — compare_ablation, compare_methods, eval_mia, compute_total_cost
 #
 # Usage:
-#   bash run_all.sh                                  # default: all stages, CIFAR-10 only
-#   bash run_all.sh --datasets cifar10 mnist         # multi-dataset
-#   bash run_all.sh --seeds 42 123 7 2024            # custom seeds
-#   bash run_all.sh --skip pretrain teachers hp      # skip stages
-#   bash run_all.sh --forget_class 3                 # target class
-#   CUDA_VISIBLE_DEVICES=0 bash run_all.sh           # pin GPU
+#   bash run_all.sh                                  # CIFAR-10, all stages, AMP+parallel auto
+#   bash run_all.sh --datasets cifar10 mnist
+#   bash run_all.sh --seeds 42 123 7
+#   bash run_all.sh --skip pretrain teachers hp
+#   bash run_all.sh --no-amp --no-parallel           # disable accelerations
+#   bash run_all.sh --forget_class 3
+#   CUDA_VISIBLE_DEVICES=0 bash run_all.sh
 
 set -euo pipefail
 
@@ -30,6 +33,8 @@ DATASETS=("cifar10")
 SEEDS=(42 123 7)
 FORGET_CLASS=3
 SKIP=()
+USE_AMP=auto
+USE_PARALLEL=auto
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Arg parse
@@ -50,15 +55,11 @@ while [[ $# -gt 0 ]]; do
       shift
       while [[ $# -gt 0 && "$1" != --* ]]; do SKIP+=("$1"); shift; done
       ;;
-    --forget_class)
-      shift; FORGET_CLASS="$1"; shift
-      ;;
-    -h|--help)
-      sed -n '1,30p' "$0"; exit 0
-      ;;
-    *)
-      echo "Unknown arg: $1"; exit 1
-      ;;
+    --forget_class) FORGET_CLASS="$2"; shift 2;;
+    --no-amp)       USE_AMP=no;        shift;;
+    --no-parallel)  USE_PARALLEL=no;   shift;;
+    -h|--help) sed -n '1,28p' "$0"; exit 0;;
+    *) echo "Unknown arg: $1"; exit 1;;
   esac
 done
 
@@ -69,32 +70,47 @@ skip_has() {
 }
 
 log() { echo -e "\n\033[1;36m[$(date +%H:%M:%S)] $*\033[0m"; }
+sep() { echo "═════════════════════════════════════════════════════════════"; }
+
+mkdir -p results/{checkpoints,reports,plots,splits,summaries}
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 0: env check
+# Stage 0: env detection
 # ─────────────────────────────────────────────────────────────────────────────
+sep
 log "Stage 0: env check"
 python - <<'PY'
-import torch, sys
+import torch
 print(f"  torch={torch.__version__}")
 if torch.cuda.is_available():
-    print(f"  CUDA={torch.version.cuda} | device={torch.cuda.get_device_name(0)} | VRAM={torch.cuda.get_device_properties(0).total_memory/1e9:.1f}GB")
+    p = torch.cuda.get_device_properties(0)
+    print(f"  CUDA={torch.version.cuda} | device={p.name} | VRAM={p.total_memory/1e9:.1f}GB")
 elif torch.backends.mps.is_available():
     print("  MPS available (Apple Silicon)")
 else:
     print("  CPU only — pipeline will be very slow")
 PY
 
-mkdir -p results/{checkpoints,reports,plots,splits,summaries}
+HAS_CUDA=$(python -c "import torch; print(int(torch.cuda.is_available()))")
+
+AMP_FLAG=""
+MASUC_SCRIPT="scripts.run_masuc"
+if [[ "$HAS_CUDA" == "1" ]]; then
+  [[ "$USE_AMP"      != "no" ]] && AMP_FLAG="--amp"
+  [[ "$USE_PARALLEL" != "no" ]] && MASUC_SCRIPT="scripts.run_masuc_parallel"
+fi
+echo "  → MASUC script: $MASUC_SCRIPT  |  AMP: ${AMP_FLAG:-disabled}"
+echo "  → Datasets: ${DATASETS[*]}  |  Seeds: ${SEEDS[*]}  |  forget_class: $FORGET_CLASS"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 1: pre-train student
+# Stage 1: pretrain student (per dataset)
 # ─────────────────────────────────────────────────────────────────────────────
 if ! skip_has "pretrain"; then
   for ds in "${DATASETS[@]}"; do
+    sep
     CKPT="results/checkpoints/${ds}_model_before_best.pth"
     if [[ -f "$CKPT" ]]; then
-      log "Stage 1 [$ds]: pretrained checkpoint exists → skip ($CKPT)"
+      log "Stage 1 [$ds]: pretrained checkpoint exists → skip"
     else
       log "Stage 1 [$ds]: pretrain student"
       python -m scripts.train_model --dataset "$ds"
@@ -103,10 +119,11 @@ if ! skip_has "pretrain"; then
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 2: teacher society
+# Stage 2: teacher society (per dataset)
 # ─────────────────────────────────────────────────────────────────────────────
 if ! skip_has "teachers"; then
   for ds in "${DATASETS[@]}"; do
+    sep
     T0="results/checkpoints/${ds}_teacher_0.pth"
     if [[ -f "$T0" ]]; then
       log "Stage 2 [$ds]: teachers already trained → skip"
@@ -118,10 +135,11 @@ if ! skip_has "teachers"; then
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 3: splits
+# Stage 3: forget/retain splits
 # ─────────────────────────────────────────────────────────────────────────────
 if ! skip_has "splits"; then
   for ds in "${DATASETS[@]}"; do
+    sep
     SP="results/splits/${ds}_split_forget_${FORGET_CLASS}.json"
     if [[ -f "$SP" ]]; then
       log "Stage 3 [$ds]: split exists → skip ($SP)"
@@ -133,30 +151,45 @@ if ! skip_has "splits"; then
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 4: MASUC + ablations
+# Stage 4: MASUC + 4 ablations × seeds (per dataset)
 # ─────────────────────────────────────────────────────────────────────────────
 if ! skip_has "ablation"; then
   for ds in "${DATASETS[@]}"; do
-    log "Stage 4 [$ds]: MASUC + 4 ablations × ${#SEEDS[@]} seeds"
-    python -m scripts.run_ablation --dataset "$ds" --forget_class "$FORGET_CLASS" --seeds "${SEEDS[@]}"
+    sep
+    log "Stage 4 [$ds]: MASUC + 4 ablations × ${#SEEDS[@]} seeds  ($MASUC_SCRIPT $AMP_FLAG)"
+    for seed in "${SEEDS[@]}"; do
+      for flag in "" "--no_ea" "--no_kd" "--no_ra" "--no_erasure"; do
+        echo ">>> MASUC ${flag:-full} | seed=$seed"
+        python -m "$MASUC_SCRIPT" --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed" $AMP_FLAG $flag
+      done
+    done
   done
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 5: baselines
+# Stage 5: all baselines × seeds (per dataset)
 # ─────────────────────────────────────────────────────────────────────────────
 if ! skip_has "baselines"; then
   for ds in "${DATASETS[@]}"; do
+    sep
     log "Stage 5 [$ds]: all baselines × ${#SEEDS[@]} seeds"
-    python -m scripts.run_all_baselines --dataset "$ds" --forget_class "$FORGET_CLASS" --seeds "${SEEDS[@]}"
+    for seed in "${SEEDS[@]}"; do
+      python -m scripts.baseline_ft            --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
+      python -m scripts.baseline_neggradplus   --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
+      python -m scripts.baseline_random_labels --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
+      python -m scripts.baseline_bad_teaching  --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
+      python -m scripts.baseline_scrub         --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
+      python -m scripts.baseline_retrain       --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
+    done
   done
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 6: HP ablation (CIFAR-10 only by default)
+# Stage 6: HP OFAT sweep (CIFAR-10 only by default)
 # ─────────────────────────────────────────────────────────────────────────────
 if ! skip_has "hp"; then
   if [[ " ${DATASETS[*]} " == *" cifar10 "* ]]; then
+    sep
     log "Stage 6: HP ablation (CIFAR-10, 33 runs)"
     python -m scripts.run_hp_ablation --dataset cifar10 --forget_class "$FORGET_CLASS"
     python -m scripts.compare_hp_ablation --dataset cifar10
@@ -164,16 +197,23 @@ if ! skip_has "hp"; then
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 7: aggregation
+# Stage 7: aggregation + ECE + LaTeX tables
 # ─────────────────────────────────────────────────────────────────────────────
 if ! skip_has "aggregate"; then
   for ds in "${DATASETS[@]}"; do
-    log "Stage 7 [$ds]: aggregate"
-    python -m scripts.compare_ablation --dataset "$ds" --seeds "${SEEDS[@]}"
-    python -m scripts.compare_methods  --dataset "$ds" --seeds "${SEEDS[@]}"
-    python -m scripts.eval_mia         --dataset "$ds" --forget_class "$FORGET_CLASS" --seeds "${SEEDS[@]}"
-    python -m scripts.compute_total_cost --dataset "$ds"
+    sep
+    log "Stage 7 [$ds]: aggregate + calibration + LaTeX"
+    python -m scripts.compare_ablation       --dataset "$ds" --seeds "${SEEDS[@]}"
+    python -m scripts.compare_methods        --dataset "$ds" --seeds "${SEEDS[@]}"
+    python -m scripts.eval_mia               --dataset "$ds" --forget_class "$FORGET_CLASS" --seeds "${SEEDS[@]}"
+    python -m scripts.eval_calibration       --dataset "$ds" --forget_class "$FORGET_CLASS" --seeds "${SEEDS[@]}"
+    python -m scripts.compute_total_cost     --dataset "$ds"
+    python -m scripts.generate_paper_tables  --dataset "$ds"
   done
 fi
 
+sep
 log "ALL DONE. Summaries in results/summaries/"
+for ds in "${DATASETS[@]}"; do
+  ls -la results/summaries/${ds}_*.md 2>/dev/null || true
+done

@@ -15,6 +15,7 @@ from src.utils.device import get_device
 from src.eval.metrics import evaluate
 
 from src.methods.masuc.train import collaborative_unlearning, reciprocal_altruism
+from src.methods.masuc.utils import EnergyRunningMean
 from src.utils.seed import set_seed
 
 def run_masuc():
@@ -43,8 +44,13 @@ def run_masuc():
     parser.add_argument("--temperature",type=float, default=None,  help="KD temperature tau (default: 2.0)")
     parser.add_argument("--run_id",     type=str,   default=None,  help="Override output run ID")
     parser.add_argument("--seed",       type=int,   default=None,  help="Random seed for reproducibility")
+    parser.add_argument("--amp",        action="store_true",       help="Enable CUDA mixed precision (Tensor Cores)")
+    parser.add_argument("--num_workers",type=int,   default=4,     help="DataLoader workers (default: 4)")
     args = parser.parse_args()
     ds = args.dataset
+
+    # Free speedup on CUDA when input shapes are constant (they are here).
+    torch.backends.cudnn.benchmark = True
 
     if args.seed is not None:
         set_seed(args.seed)
@@ -73,7 +79,8 @@ def run_masuc():
         "lr_teacher":   args.lr_teacher  if args.lr_teacher  is not None else 0.0001,
         "momentum":     0.9,
         "weight_decay": 5e-4,
-        "num_workers":  4,
+        "num_workers":  args.num_workers,
+        "amp":          args.amp,
         "lambda_1":     (args.lambda_1   if args.lambda_1    is not None else (0.0 if args.no_kd      else 1.0)),
         "lambda_2":     (args.lambda_2   if args.lambda_2    is not None else (0.0 if args.no_ea      else 0.1)),
         "lambda_3":     (args.lambda_3   if args.lambda_3    is not None else (0.0 if args.no_erasure else 0.5)),
@@ -93,9 +100,23 @@ def run_masuc():
     forget_test_ds  = Subset(test_ds,  split["indices"]["forget_test"])
     retain_test_ds  = Subset(test_ds,  split["indices"]["retain_test"])
 
-    forget_train_loader = DataLoader(forget_train_ds, batch_size=hyperparams["batch_size"], shuffle=True,  num_workers=hyperparams["num_workers"])
-    forget_test_loader  = DataLoader(forget_test_ds,  batch_size=256,                       shuffle=False, num_workers=hyperparams["num_workers"])
-    retain_test_loader  = DataLoader(retain_test_ds,  batch_size=256,                       shuffle=False, num_workers=hyperparams["num_workers"])
+    pin = (device.type == "cuda")
+    persistent = (hyperparams["num_workers"] > 0)
+    forget_train_loader = DataLoader(
+        forget_train_ds, batch_size=hyperparams["batch_size"], shuffle=True,
+        num_workers=hyperparams["num_workers"], pin_memory=pin,
+        persistent_workers=persistent,
+    )
+    forget_test_loader  = DataLoader(
+        forget_test_ds, batch_size=256, shuffle=False,
+        num_workers=hyperparams["num_workers"], pin_memory=pin,
+        persistent_workers=persistent,
+    )
+    retain_test_loader  = DataLoader(
+        retain_test_ds, batch_size=256, shuffle=False,
+        num_workers=hyperparams["num_workers"], pin_memory=pin,
+        persistent_workers=persistent,
+    )
 
 
     print("Loading models...")
@@ -122,6 +143,11 @@ def run_masuc():
 
     history = {"epoch": [], "train_loss": [], "retain_acc": [], "forget_acc": []}
 
+    use_amp = bool(args.amp and device.type == "cuda")
+    scaler  = torch.cuda.amp.GradScaler() if use_amp else None
+    if use_amp:
+        print("AMP (mixed precision) ENABLED")
+
     print(f"\n{'='*60}\n\t=== MASUC Unlearning ===\n{'='*60}\n")
     t0_total = time.time()
 
@@ -143,6 +169,8 @@ def run_masuc():
                     lambda_2=hyperparams["lambda_2"],
                     temperature=hyperparams["temperature"],
                     device=device,
+                    use_amp=use_amp,
+                    scaler=scaler,
                 )
 
         metrics, _ = collaborative_unlearning(
@@ -159,7 +187,9 @@ def run_masuc():
             lambda_2=hyperparams["lambda_2"],
             lambda_3=hyperparams["lambda_3"],
             temperature=hyperparams["temperature"],
-            device=device
+            device=device,
+            use_amp=use_amp,
+            scaler=scaler,
         )
 
         history["epoch"].append(ep)

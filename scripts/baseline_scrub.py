@@ -123,6 +123,10 @@ def baseline_scrub():
                 with torch.no_grad():
                     t_logits = teacher(x_f)
                 s_logits = student(x_f)
+                # MAX phase: gradient ASCENT on KL distance from frozen teacher.
+                # The minus sign is intentional — we want to push the student
+                # AWAY from the teacher on the forget set. Negative logged
+                # loss is the expected behaviour (see Kurmanji et al. 2023).
                 loss_max = -kd_loss(s_logits, t_logits, hyperparams["temperature"])
 
                 optimizer.zero_grad(set_to_none=True)
