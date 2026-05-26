@@ -7,13 +7,14 @@
 # is detected.  Falls back gracefully on MPS/CPU.
 #
 # Stages (skippable via --skip):
-#   pretrain   — student pretrain per dataset
-#   teachers   — train K=5 teachers per dataset
-#   splits     — forget/retain split per (dataset, forget_class)
-#   ablation   — MASUC + 4 ablations × seeds
-#   baselines  — FT, NegGrad+, RandLabels, Bad-Teaching, SCRUB, Retrain × seeds
-#   hp         — HP OFAT sweep (CIFAR-10 only by default)
-#   aggregate  — compare_ablation, compare_methods, eval_mia, compute_total_cost
+#   pretrain    — student pretrain per dataset
+#   teachers    — train K=5 teachers per dataset
+#   splits      — forget/retain split per (dataset, forget_class)
+#   ablation    — MASUC + 4 ablations × seeds
+#   baselines   — FT, NegGrad+, RandLabels, Bad-Teaching, SCRUB, Retrain × seeds
+#   hp          — HP OFAT sweep (CIFAR-10 only by default)
+#   multiclass  — per-class robustness sweep (3 forget classes) — addresses C7
+#   aggregate   — compare_*, eval_mia, eval_calibration, LaTeX tables
 #
 # Usage:
 #   bash run_all.sh                                  # CIFAR-10, all stages, AMP+parallel auto
@@ -194,6 +195,21 @@ if ! skip_has "hp"; then
     python -m scripts.run_hp_ablation --dataset cifar10 --forget_class "$FORGET_CLASS"
     python -m scripts.compare_hp_ablation --dataset cifar10
   fi
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage 6b: multi-class robustness (addresses reviewer C7)
+#   Re-runs MASUC + baselines for 2 additional forget classes (5 and 7 on
+#   CIFAR-10). Snapshots per-class results in results_classN/.
+# ─────────────────────────────────────────────────────────────────────────────
+if ! skip_has "multiclass"; then
+  for ds in "${DATASETS[@]}"; do
+    if [[ "$ds" == "cifar10" ]]; then
+      sep
+      log "Stage 6b [$ds]: multi-class C7 sweep (classes 3 5 7 × ${#SEEDS[@]} seeds)"
+      python -m scripts.run_multiclass --dataset "$ds" --classes 3 5 7 --seeds "${SEEDS[@]}"
+    fi
+  done
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
