@@ -167,7 +167,9 @@ def run_masuc_parallel():
     )
 
     use_amp = bool(args.amp and device.type == "cuda")
-    scaler  = torch.cuda.amp.GradScaler() if use_amp else None
+    # One scaler per optimizer — GradScaler is not thread-safe.
+    teacher_scalers = {i: torch.amp.GradScaler("cuda") for i in range(5)} if use_amp else {i: None for i in range(5)}
+    student_scaler  = torch.amp.GradScaler("cuda") if use_amp else None
     if use_amp:
         print("AMP (mixed precision) ENABLED")
 
@@ -199,7 +201,7 @@ def run_masuc_parallel():
                         device=device,
                         training_energies_target=teacher_energy[tid],
                         use_amp=use_amp,
-                        scaler=scaler,
+                        scaler=teacher_scalers[tid],
                     )
 
             if device.type == "cuda":
@@ -229,7 +231,7 @@ def run_masuc_parallel():
             temperature=hyperparams["temperature"],
             device=device,
             use_amp=use_amp,
-            scaler=scaler,
+            scaler=student_scaler,
         )
 
         history["epoch"].append(ep)
