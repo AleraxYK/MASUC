@@ -35,7 +35,6 @@ SEEDS=(42 123 7)
 FORGET_CLASS=3
 SKIP=()
 USE_AMP=auto
-USE_PARALLEL=auto
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Arg parse
@@ -58,7 +57,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --forget_class) FORGET_CLASS="$2"; shift 2;;
     --no-amp)       USE_AMP=no;        shift;;
-    --no-parallel)  USE_PARALLEL=no;   shift;;
     -h|--help) sed -n '1,28p' "$0"; exit 0;;
     *) echo "Unknown arg: $1"; exit 1;;
   esac
@@ -97,8 +95,7 @@ HAS_CUDA=$(python -c "import torch; print(int(torch.cuda.is_available()))")
 AMP_FLAG=""
 MASUC_SCRIPT="scripts.run_masuc"
 if [[ "$HAS_CUDA" == "1" ]]; then
-  [[ "$USE_AMP"      != "no" ]] && AMP_FLAG="--amp"
-  [[ "$USE_PARALLEL" != "no" ]] && MASUC_SCRIPT="scripts.run_masuc_parallel"
+  [[ "$USE_AMP" != "no" ]] && AMP_FLAG="--amp"
 fi
 echo "  → MASUC script: $MASUC_SCRIPT  |  AMP: ${AMP_FLAG:-disabled}"
 echo "  → Datasets: ${DATASETS[*]}  |  Seeds: ${SEEDS[*]}  |  forget_class: $FORGET_CLASS"

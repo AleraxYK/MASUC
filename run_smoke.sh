@@ -21,7 +21,6 @@ DS="cifar10"
 FC=3
 SEED=42
 EP=1
-USE_PARALLEL=auto
 USE_AMP=auto
 
 while [[ $# -gt 0 ]]; do
@@ -30,7 +29,6 @@ while [[ $# -gt 0 ]]; do
     --forget_class)  FC="$2"; shift 2;;
     --seed)          SEED="$2"; shift 2;;
     --epochs)        EP="$2"; shift 2;;
-    --no-parallel)   USE_PARALLEL=no;  shift;;
     --no-amp)        USE_AMP=no;       shift;;
     -h|--help) sed -n '1,21p' "$0"; exit 0;;
     *) echo "Unknown: $1"; exit 1;;
@@ -52,8 +50,7 @@ python -c "import torch; print('torch', torch.__version__, '| cuda', torch.cuda.
 AMP_FLAG=""
 MASUC_SCRIPT="scripts.run_masuc"
 if [[ "$HAS_CUDA" == "1" ]]; then
-  [[ "$USE_AMP"      != "no" ]] && AMP_FLAG="--amp"
-  [[ "$USE_PARALLEL" != "no" ]] && MASUC_SCRIPT="scripts.run_masuc_parallel"
+  [[ "$USE_AMP" != "no" ]] && AMP_FLAG="--amp"
 fi
 echo "  → MASUC script: $MASUC_SCRIPT  |  AMP: $AMP_FLAG"
 
