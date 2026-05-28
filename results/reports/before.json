@@ -5,9 +5,9 @@
   "lr": 0.1,
   "momentum": 0.9,
   "weight_decay": 0.0005,
-  "device": "mps",
+  "device": "cuda",
   "final": {
-    "test_all_acc": 0.2911,
-    "test_all_conf": 0.3517075181007385
+    "test_all_acc": 0.7909,
+    "test_all_conf": 0.8201597332954407
   }
 }

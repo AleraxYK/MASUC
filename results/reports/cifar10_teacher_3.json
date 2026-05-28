@@ -1,0 +1,23 @@
+{
+  "teacher_id": 3,
+  "blind_class": 5,
+  "hyperparams": {
+    "backbone": "resnet18",
+    "epochs": 5,
+    "batch_size": 64,
+    "lr": 0.01,
+    "momentum": 0.9,
+    "weight_decay": 0.0005
+  },
+  "metrics_final": {
+    "seen_acc": 0.9396666666666667,
+    "seen_conf": 0.9453694820404053,
+    "blind_acc": 0.014,
+    "blind_conf": 0.772093653678894
+  },
+  "elapsed_sec": 423.0610749721527,
+  "ckpt_path": "results/checkpoints/cifar10_teacher_3.pth",
+  "curve_path": "results/reports/cifar10_teacher_3_curve.json",
+  "loss_plot_path": "results/plots/cifar10_teacher_3_loss.png",
+  "acc_plot_path": "results/plots/cifar10_teacher_3_acc.png"
+}
