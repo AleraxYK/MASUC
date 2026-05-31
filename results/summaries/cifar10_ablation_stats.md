@@ -6,8 +6,8 @@ Results over 3 seed(s). Format: mean ± std (sample std, ddof=1).
 
 | Configuration | n | Retain Acc | Forget Acc | ∆ Forget |
 |:---|:---:|:---:|:---:|:---:|
-| **Full MASUC** | 3 | 85.01% ± 0.81% | 11.87% ± 3.74% | — |
-| **w/o Energy Alignment** | 3 | 82.60% ± 1.00% | 8.60% ± 2.02% | -3.27% |
-| **w/o Knowledge Distillation** | 3 | 83.60% ± 0.85% | 9.57% ± 2.30% | -2.30% |
-| **w/o Reciprocal Altruism** | 3 | 84.11% ± 0.63% | 8.60% ± 2.01% | -3.27% |
-| **w/o Erasure Loss** | 3 | 83.68% ± 0.76% | 13.60% ± 3.28% | +1.73% |
+| **Full MASUC** | 3 | 86.76% ± 0.19% | 11.10% ± 0.56% | — |
+| **w/o Energy Alignment** | 3 | 86.62% ± 0.24% | 12.90% ± 0.60% | +1.80% |
+| **w/o Knowledge Distillation** | 3 | 84.60% ± 0.12% | 8.90% ± 0.35% | -2.20% |
+| **w/o Reciprocal Altruism** | 3 | 87.32% ± 0.16% | 60.77% ± 0.85% | +49.67% |
+| **w/o Erasure Loss** | 3 | 86.87% ± 0.17% | 13.67% ± 0.81% | +2.57% |

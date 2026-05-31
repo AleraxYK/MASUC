@@ -167,18 +167,32 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 5: all baselines × seeds (per dataset)
 # ─────────────────────────────────────────────────────────────────────────────
+# if ! skip_has "baselines"; then
+#   for ds in "${DATASETS[@]}"; do
+#     sep
+#     log "Stage 5 [$ds]: all baselines × ${#SEEDS[@]} seeds"
+#     for seed in "${SEEDS[@]}"; do
+#       python -m scripts.baseline_ft            --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
+#       python -m scripts.baseline_neggradplus   --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
+#       python -m scripts.baseline_random_labels --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
+#       python -m scripts.baseline_bad_teaching  --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
+#       python -m scripts.baseline_scrub         --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
+#       python -m scripts.baseline_retrain       --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
+#     done
+#   done
+# fi
+
 if ! skip_has "baselines"; then
   for ds in "${DATASETS[@]}"; do
     sep
     log "Stage 5 [$ds]: all baselines × ${#SEEDS[@]} seeds"
-    for seed in "${SEEDS[@]}"; do
-      python -m scripts.baseline_ft            --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
-      python -m scripts.baseline_neggradplus   --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
-      python -m scripts.baseline_random_labels --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
-      python -m scripts.baseline_bad_teaching  --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
-      python -m scripts.baseline_scrub         --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
-      python -m scripts.baseline_retrain       --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "$seed"
-    done
+    python -m scripts.baseline_retrain       --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "123"
+    python -m scripts.baseline_ft            --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "7"
+    python -m scripts.baseline_neggradplus   --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "7"
+    python -m scripts.baseline_random_labels --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "7"
+    python -m scripts.baseline_bad_teaching  --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "7"
+    python -m scripts.baseline_scrub         --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "7"
+    python -m scripts.baseline_retrain       --dataset "$ds" --forget_class "$FORGET_CLASS" --seed "7"
   done
 fi
 
@@ -208,6 +222,7 @@ if ! skip_has "multiclass"; then
     fi
   done
 fi
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 7: aggregation + ECE + LaTeX tables

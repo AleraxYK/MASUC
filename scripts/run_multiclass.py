@@ -151,6 +151,15 @@ def main():
     print(f"{'='*60}\n")
 
     if not args.skip_run:
+        # These (fc, seed) → script combinations have already been run; skip them.
+        already_done: dict[tuple[int, int], set[str]] = {
+            (3, 42): {
+                "scripts.run_masuc",
+                "scripts.baseline_ft",
+                "scripts.baseline_neggradplus",
+            }
+        }
+
         for fc in classes:
             print(f"\n--- Forget class {fc} ---")
 
@@ -166,8 +175,11 @@ def main():
 
             for seed in seeds:
                 # MASUC
-                run([sys.executable, "-m", "scripts.run_masuc",
-                     "--dataset", ds, "--forget_class", str(fc), "--seed", str(seed)])
+                if "scripts.run_masuc" in already_done.get((fc, seed), set()):
+                    print(f"  [skip] scripts.run_masuc  fc={fc}  seed={seed}  (already run)")
+                else:
+                    run([sys.executable, "-m", "scripts.run_masuc",
+                         "--dataset", ds, "--forget_class", str(fc), "--seed", str(seed)])
 
                 if not args.no_baselines:
                     for script in [
@@ -178,6 +190,9 @@ def main():
                         "scripts.baseline_scrub",
                         "scripts.baseline_retrain",
                     ]:
+                        if script in already_done.get((fc, seed), set()):
+                            print(f"  [skip] {script}  fc={fc}  seed={seed}  (already run)")
+                            continue
                         run([sys.executable, "-m", script,
                              "--dataset", ds, "--forget_class", str(fc), "--seed", str(seed)])
 

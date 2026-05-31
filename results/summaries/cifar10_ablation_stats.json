@@ -1,42 +1,42 @@
 [
   {
     "label": "Full MASUC",
-    "retain_mean": 0.8500740740740741,
-    "retain_std": 0.008119731593609684,
-    "forget_mean": 0.11866666666666666,
-    "forget_std": 0.03742102795666273,
+    "retain_mean": 0.8675925925925926,
+    "retain_std": 0.0019127039012852083,
+    "forget_mean": 0.111,
+    "forget_std": 0.005567764362830027,
     "n_seeds": 3
   },
   {
     "label": "w/o Energy Alignment",
-    "retain_mean": 0.8259629629629629,
-    "retain_std": 0.009989088697379517,
-    "forget_mean": 0.08600000000000001,
-    "forget_std": 0.020223748416156685,
+    "retain_mean": 0.8661851851851852,
+    "retain_std": 0.002383931117296878,
+    "forget_mean": 0.129,
+    "forget_std": 0.006000000000000005,
     "n_seeds": 3
   },
   {
     "label": "w/o Knowledge Distillation",
-    "retain_mean": 0.836037037037037,
-    "retain_std": 0.008472419548400285,
-    "forget_mean": 0.09566666666666668,
-    "forget_std": 0.023028967265887833,
+    "retain_mean": 0.846037037037037,
+    "retain_std": 0.001188075180173779,
+    "forget_mean": 0.08900000000000001,
+    "forget_std": 0.003464101615137758,
     "n_seeds": 3
   },
   {
     "label": "w/o Reciprocal Altruism",
-    "retain_mean": 0.8411481481481481,
-    "retain_std": 0.006281791571661251,
-    "forget_mean": 0.08600000000000001,
-    "forget_std": 0.020074859899884733,
+    "retain_mean": 0.8732222222222221,
+    "retain_std": 0.0016367688736284838,
+    "forget_mean": 0.6076666666666667,
+    "forget_std": 0.00850490054811539,
     "n_seeds": 3
   },
   {
     "label": "w/o Erasure Loss",
-    "retain_mean": 0.8368148148148148,
-    "retain_std": 0.007643550766022111,
-    "forget_mean": 0.136,
-    "forget_std": 0.03278719262151001,
+    "retain_mean": 0.8686666666666666,
+    "retain_std": 0.0016592427247853613,
+    "forget_mean": 0.1366666666666667,
+    "forget_std": 0.008144527815247068,
     "n_seeds": 3
   }
 ]

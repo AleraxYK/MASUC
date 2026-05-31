@@ -1,0 +1,73 @@
+{
+  "pretrain": {
+    "teacher_total_sec": 3003.0254180431366
+  },
+  "methods": [
+    {
+      "label": "Fine-Tuning",
+      "elapsed_mean_s": 406.59517065684,
+      "elapsed_std_s": 1.123330541950746,
+      "n": 3
+    },
+    {
+      "label": "NegGrad+",
+      "elapsed_mean_s": 1281.297523021698,
+      "elapsed_std_s": 9.451243098932615,
+      "n": 3
+    },
+    {
+      "label": "Random Labels",
+      "elapsed_mean_s": 4387.384949207306,
+      "elapsed_std_s": 111.51514462854188,
+      "n": 3
+    },
+    {
+      "label": "Bad-Teaching",
+      "elapsed_mean_s": 1535.00008948644,
+      "elapsed_std_s": 15.575020573796198,
+      "n": 3
+    },
+    {
+      "label": "SCRUB",
+      "elapsed_mean_s": 549.2575706640879,
+      "elapsed_std_s": 0.6319385465677363,
+      "n": 3
+    },
+    {
+      "label": "MASUC (Ours)",
+      "elapsed_mean_s": 378.9558370113373,
+      "elapsed_std_s": 3.20647829338556,
+      "n": 3
+    },
+    {
+      "label": "MASUC w/o EA",
+      "elapsed_mean_s": 254.20058170954385,
+      "elapsed_std_s": 1.676667939694047,
+      "n": 3
+    },
+    {
+      "label": "MASUC w/o KD",
+      "elapsed_mean_s": 253.34334786732992,
+      "elapsed_std_s": 0.5902822522468174,
+      "n": 3
+    },
+    {
+      "label": "MASUC w/o RA",
+      "elapsed_mean_s": 110.73315374056499,
+      "elapsed_std_s": 0.3217089092617052,
+      "n": 3
+    },
+    {
+      "label": "MASUC w/o Erasure",
+      "elapsed_mean_s": 251.96764612197876,
+      "elapsed_std_s": 0.9106554995962767,
+      "n": 3
+    },
+    {
+      "label": "Retrain (Gold)",
+      "elapsed_mean_s": 1641.8113137086232,
+      "elapsed_std_s": 3.953012332275507,
+      "n": 3
+    }
+  ]
+}

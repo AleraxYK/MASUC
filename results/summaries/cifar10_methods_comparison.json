@@ -1,64 +1,56 @@
 [
   {
-    "label": "Before Unlearning",
-    "retain_mean": 0.8279,
-    "retain_std": 0.0,
-    "forget_mean": 0.82,
-    "forget_std": 0.0,
-    "n_seeds": 0
-  },
-  {
     "label": "Fine-Tuning",
-    "retain_mean": 0.9418888888888889,
-    "retain_std": 0.001527525231651948,
-    "forget_mean": 0.05433333333333334,
-    "forget_std": 0.0061101009266077855,
+    "retain_mean": 0.9428148148148149,
+    "retain_std": 0.0008190127550924372,
+    "forget_mean": 0.03666666666666667,
+    "forget_std": 0.00404145188432738,
     "n_seeds": 3
   },
   {
     "label": "NegGrad+",
-    "retain_mean": 0.38903703703703707,
-    "retain_std": 0.028419332085993728,
+    "retain_mean": 0.4445925925925926,
+    "retain_std": 0.04313692430717712,
     "forget_mean": 0.0,
     "forget_std": 0.0,
     "n_seeds": 3
   },
   {
     "label": "Random Labels",
-    "retain_mean": 0.934888888888889,
-    "retain_std": 0.001175889471584224,
+    "retain_mean": 0.9343703703703703,
+    "retain_std": 0.0020497917188180316,
     "forget_mean": 0.0,
     "forget_std": 0.0,
     "n_seeds": 3
   },
   {
     "label": "Bad-Teaching",
-    "retain_mean": 0.8719259259259259,
-    "retain_std": 0.009141773157375185,
-    "forget_mean": 0.28099999999999997,
-    "forget_std": 0.157,
+    "retain_mean": 0.8624444444444443,
+    "retain_std": 0.005892032703805706,
+    "forget_mean": 0.24233333333333332,
+    "forget_std": 0.10807559083036895,
     "n_seeds": 3
   },
   {
     "label": "SCRUB",
-    "retain_mean": 0.8858888888888888,
-    "retain_std": 0.0009094836413191446,
-    "forget_mean": 0.38933333333333336,
-    "forget_std": 0.011590225767142484,
+    "retain_mean": 0.884962962962963,
+    "retain_std": 0.0017719812909490057,
+    "forget_mean": 0.2856666666666667,
+    "forget_std": 0.010969655114602878,
     "n_seeds": 3
   },
   {
     "label": "MASUC (Ours)",
-    "retain_mean": 0.836037037037037,
-    "retain_std": 0.008472419548400285,
-    "forget_mean": 0.09566666666666668,
-    "forget_std": 0.023028967265887833,
+    "retain_mean": 0.8675925925925926,
+    "retain_std": 0.0019127039012852083,
+    "forget_mean": 0.111,
+    "forget_std": 0.005567764362830027,
     "n_seeds": 3
   },
   {
     "label": "Retrain (Gold Std.)",
-    "retain_mean": 0.8706296296296295,
-    "retain_std": 0.010937156814133861,
+    "retain_mean": 0.8505925925925926,
+    "retain_std": 0.012804963029595204,
     "forget_mean": 0.0,
     "forget_std": 0.0,
     "n_seeds": 3

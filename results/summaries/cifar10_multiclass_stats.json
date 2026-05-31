@@ -1,0 +1,65 @@
+[
+  {
+    "forget_class": 3,
+    "method": "FT",
+    "n_seeds": 3,
+    "retain_mean": 0.9428148148148149,
+    "retain_std": 0.0008190127550924372,
+    "forget_mean": 0.03666666666666667,
+    "forget_std": 0.00404145188432738
+  },
+  {
+    "forget_class": 3,
+    "method": "NegGrad+",
+    "n_seeds": 3,
+    "retain_mean": 0.4445925925925926,
+    "retain_std": 0.04313692430717712,
+    "forget_mean": 0.0,
+    "forget_std": 0.0
+  },
+  {
+    "forget_class": 3,
+    "method": "Random Labels",
+    "n_seeds": 3,
+    "retain_mean": 0.9343703703703703,
+    "retain_std": 0.0020497917188180316,
+    "forget_mean": 0.0,
+    "forget_std": 0.0
+  },
+  {
+    "forget_class": 3,
+    "method": "Bad-Teaching",
+    "n_seeds": 3,
+    "retain_mean": 0.8624444444444443,
+    "retain_std": 0.005892032703805706,
+    "forget_mean": 0.24233333333333332,
+    "forget_std": 0.10807559083036895
+  },
+  {
+    "forget_class": 3,
+    "method": "SCRUB",
+    "n_seeds": 3,
+    "retain_mean": 0.884962962962963,
+    "retain_std": 0.0017719812909490057,
+    "forget_mean": 0.2856666666666667,
+    "forget_std": 0.010969655114602878
+  },
+  {
+    "forget_class": 3,
+    "method": "MASUC (Ours)",
+    "n_seeds": 3,
+    "retain_mean": 0.8675925925925926,
+    "retain_std": 0.0019127039012852083,
+    "forget_mean": 0.111,
+    "forget_std": 0.005567764362830027
+  },
+  {
+    "forget_class": 3,
+    "method": "Retrain (Gold)",
+    "n_seeds": 3,
+    "retain_mean": 0.8505925925925926,
+    "retain_std": 0.012804963029595204,
+    "forget_mean": 0.0,
+    "forget_std": 0.0
+  }
+]
