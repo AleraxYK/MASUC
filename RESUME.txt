@@ -1,0 +1,64 @@
+STATO AL 2026-06-03
+===================
+
+CLASS 5  →  COMPLETATA (snapshot in results_class5/)
+CLASS 7  →  INTERROTTA
+
+  seed=42:
+    [OK] masuc
+    [OK] baseline_ft
+    [ ]  baseline_neggradplus   ← RIPRENDI DA QUI
+    [ ]  baseline_random_labels
+    [ ]  baseline_bad_teaching
+    [ ]  baseline_scrub
+    [ ]  baseline_retrain
+
+  seed=123: tutto da fare
+  seed=7:   tutto da fare
+
+AGGREGAZIONE  →  non ancora avviata
+
+===================
+COMANDI PER RIPRENDERE
+===================
+
+# seed=42 — metodi mancanti
+python -m scripts.baseline_neggradplus   --dataset cifar10 --forget_class 7 --seed 42
+python -m scripts.baseline_random_labels --dataset cifar10 --forget_class 7 --seed 42
+python -m scripts.baseline_bad_teaching  --dataset cifar10 --forget_class 7 --seed 42
+python -m scripts.baseline_scrub         --dataset cifar10 --forget_class 7 --seed 42
+python -m scripts.baseline_retrain       --dataset cifar10 --forget_class 7 --seed 42
+
+# seed=123 — tutto
+python -m scripts.run_masuc              --dataset cifar10 --forget_class 7 --seed 123 --amp
+python -m scripts.baseline_ft            --dataset cifar10 --forget_class 7 --seed 123
+python -m scripts.baseline_neggradplus   --dataset cifar10 --forget_class 7 --seed 123
+python -m scripts.baseline_random_labels --dataset cifar10 --forget_class 7 --seed 123
+python -m scripts.baseline_bad_teaching  --dataset cifar10 --forget_class 7 --seed 123
+python -m scripts.baseline_scrub         --dataset cifar10 --forget_class 7 --seed 123
+python -m scripts.baseline_retrain       --dataset cifar10 --forget_class 7 --seed 123
+
+# seed=7 — tutto
+python -m scripts.run_masuc              --dataset cifar10 --forget_class 7 --seed 7 --amp
+python -m scripts.baseline_ft            --dataset cifar10 --forget_class 7 --seed 7
+python -m scripts.baseline_neggradplus   --dataset cifar10 --forget_class 7 --seed 7
+python -m scripts.baseline_random_labels --dataset cifar10 --forget_class 7 --seed 7
+python -m scripts.baseline_bad_teaching  --dataset cifar10 --forget_class 7 --seed 7
+python -m scripts.baseline_scrub         --dataset cifar10 --forget_class 7 --seed 7
+python -m scripts.baseline_retrain       --dataset cifar10 --forget_class 7 --seed 7
+
+# snapshot + aggregazione finale
+# (equivalente a snapshot_class 7 + run_multiclass)
+mkdir -p results_class7/reports results_class7/checkpoints
+mv results/reports/cifar10_*_seed*_curve.json results_class7/reports/
+mv results/checkpoints/cifar10_*_seed*.pth    results_class7/checkpoints/
+python -m scripts.run_multiclass --dataset cifar10 --classes 3 5 7 --seeds 42 123 7 --skip_run
+
+===================
+NOTE
+===================
+- results/reports/ contiene ancora:
+    cifar10_masuc_seed42_curve.json       (forget_class=7, retain=83.8%, forget=18.5%)
+    cifar10_baseline_ft_seed42_curve.json (forget_class=7, retain=92.4%, forget=34.1%)
+  NON cancellarli, servono per l'aggregazione.
+- Il split per class 7 esiste già: results/splits/cifar10_split_forget_7.json
