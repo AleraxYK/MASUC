@@ -4,23 +4,23 @@
     2
   ],
   "train_loss": [
-    3.6520703525543214,
-    1.3289654092788696
+    3.6995870590209963,
+    1.3064189538955688
   ],
   "retain_acc": [
-    0.30844221105527636,
-    0.2891457286432161
+    0.3088442211055276,
+    0.288643216080402
   ],
   "forget_acc": [
     0.04,
-    0.0
+    0.02
   ],
-  "elapsed_sec": 30.140987157821655,
+  "elapsed_sec": 40.55780291557312,
   "hyperparams": {
     "backbone": "resnet18",
     "epochs": 2,
     "batch_size": 128,
-    "lr_student": 0.0003,
+    "lr_student": 0.0002,
     "lr_teacher": 0.0001,
     "momentum": 0.9,
     "weight_decay": 0.0005,
@@ -28,9 +28,9 @@
     "amp": true,
     "lambda_1": 1.0,
     "lambda_2": 0.1,
-    "lambda_3": 0.2,
+    "lambda_3": 0.15,
     "temperature": 2.0,
     "forget_class": 3,
-    "seed": null
+    "seed": 42
   }
 }
